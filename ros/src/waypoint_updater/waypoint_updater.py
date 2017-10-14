@@ -36,17 +36,53 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
-
+        # other member variables we need
+        self.x = None
+        self.y = None
+        self.t = None
+        self.v = 4.0
+        self.wp = None
         rospy.spin()
 
-    def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+    # TODO DONE: refine this initial implementation
+    def callback_pose(self, msg):
+        self.x = msg.pose.position.x
+        self.y = msg.pose.position.y
+        o = msg.pose.orientation
+        quat = [o.x, o.y, o.z, o.w]
+        euler = tf.transformations.euler_from_quaternion(quat)
+        self.t = euler[2]
+        
+        # JWD: moved update loop into this callback
+        if self.wp is None:
+            return
+        # get the index of the closest waypoint
+        idx = assist.nearest_waypoint(self.wp, self.x, self.y, self.t)
+        #rospy.loginfo("idx: %d, x: %.2f, y: %.2f, t: %.2f", idx, self.x, self.y, self.t)
+        
+        # make a lane object
+        lane = Lane()
+        
+        numPts = len(self.wp.waypoints)
+        # and add a list of waypoints
+        for _ in range(LOOKAHEAD_WPS):
+            wp = self.wp.waypoints[idx]
+            new_point = Waypoint()
+            new_point.pose = wp.pose
+            
+            # set the velocity at each waypoint
+            new_point.twist.twist.linear.x = self.v
+            
+            # append the point
+            lane.waypoints.append(new_point)
+            idx = (idx + 1) % numPts
+            
+        # send
+        self.final_waypoints_pub.publish(lane)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        # TODO DONE: Implement
+        self.wp = waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
