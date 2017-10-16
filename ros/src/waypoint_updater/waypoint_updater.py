@@ -22,7 +22,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -100,11 +100,20 @@ class WaypointUpdater(object):
 	      rospy.logwarn('Current closest waypoint is (ind, x, y): %s, %f, %f ', i_wp, x_wp, y_wp)	
   	      #Publish waypoint list
 	      self.set_final_waypoints(i_wp)
+              
+	      self.set_final_waypoint_velocity(self.base_waypoints[i_wp])
+	      
 	      self.final_waypoints_pub.waypoints = self.final_waypoints
 
     def set_final_waypoints(self, i_wp):
 	# Set final_waypoints to include the current waypoint plus the next LOOKAHEAD waypoints
 	self.final_waypoints = deepcopy(self.base_waypoints[i_wp : i_wp+LOOKAHEAD_WPS])
+
+    def set_final_waypoint_velocity(self, waypoint):
+	# Set the waypoint velocity    
+	wp_velocity = self.get_waypoint_velocity(waypoint)
+	self.set_waypoint_velocity2(waypoint, wp_velocity)
+
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -117,6 +126,9 @@ class WaypointUpdater(object):
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
+    def set_waypoint_velocity2(self, waypoint, velocity):
+        waypoint.twist.twist.linear.x = velocity
+        rospy.logwarn('Waypoint velocity set to: %f', velocity) 
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
