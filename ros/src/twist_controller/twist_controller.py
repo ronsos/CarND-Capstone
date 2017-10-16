@@ -22,6 +22,9 @@ class Controller(object):
 	max_steer_angle = kwargs['max_steer_angle']	
 	min_speed       = kwargs['min_speed']	
 
+	# Initialize variables
+	self.previous_time = None
+
 	# Yaw control setup
 	yaw_params = [wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle]
 	self.yaw_controller = YawController(*yaw_params)
@@ -35,6 +38,12 @@ class Controller(object):
 
 	pass
 
+    def update_sample_step(self):
+	current_time = rospy.get_time()
+	time_step = current_time - self.previous_time if self.previous_time else 0.2
+	self.previous_time = current_time
+	return time_step
+
     def control(self, linear_velocity, angular_velocity, current_linear_vel, dbw_enabled):
 
 	# If manual, reset controllers and return zeroes for throttle, brake, and steering        
@@ -43,9 +52,15 @@ class Controller(object):
 	  return 0.0, 0.0, 0.0
 
 	# Find throttle, brake and steering commands
+	# Update time_step
+	time_step = self.update_sample_step()	
 
-	throttle = 1.0
-	brake = 0.0
+	# Calculate velocity error
+	velocity_error = linear_velocity - current_linear_vel
+	
+	# Throttle and brake commands using PID control 
+	throttle = self.pid_throttle.step(velocity_error, time_step)
+	brake = self.pid_brake.step(-velocity_error, time_step)
 
 	# Yaw controller for steering
 	steering = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_linear_vel)

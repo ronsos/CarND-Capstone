@@ -106,9 +106,6 @@ class DBWNode(object):
                                                               self.angular_velocity,
                                                               self.current_linear_vel,
                                                               self.dbw_enabled)  
- 	  # throttle = 1.0
-	  # brake = 0.0
-	  # steer = 0.0
 
 	  # If dbw node is enabled, publish commands. Otherwise, reset. 
 	  if self.dbw_enabled:
