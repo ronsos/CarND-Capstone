@@ -3,7 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-
+from copy import deepcopy
 import math
 import tf
 
@@ -42,8 +42,8 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
-        while not rospy.is_shutdown():
+        # Check that sim is active and get waypoints if so
+	while not rospy.is_shutdown():
 	  self.get_final_waypoints()
 
         rospy.spin()
@@ -54,7 +54,7 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, waypoints):
 	self.base_waypoints = waypoints.waypoints
-
+    
     def get_final_waypoints(self):
 	# Check for initialization
         # Get current position and yaw angle
@@ -95,8 +95,12 @@ class WaypointUpdater(object):
 	      flag_wp = True
 	      rospy.logwarn('Current closest waypoint is (ind, x, y): %s, %f, %f ', i_wp, x_wp, y_wp)	
   	      #Publish waypoint list
-	      # set_final_waypoints
+	      self.set_final_waypoints(i_wp)
+	      self.final_waypoints_pub.waypoints = self.final_waypoints
 
+    def set_final_waypoints(self, i_wp):
+	# Set final_waypoints to include the current waypoint plus the next LOOKAHEAD waypoints
+	self.final_waypoints = deepcopy(self.base_waypoints[i_wp : i_wp+LOOKAHEAD_WPS])
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
