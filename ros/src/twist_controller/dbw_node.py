@@ -45,6 +45,7 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+	min_speed = 0.0
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -63,7 +64,8 @@ class DBWNode(object):
 	  'wheel_base'     : wheel_base,
 	  'steer_ratio'    : steer_ratio,
 	  'max_lat_accel'  : max_lat_accel,
-	  'max_steer_angle': max_steer_angle}
+	  'max_steer_angle': max_steer_angle,
+	  'min_speed'      : min_speed}
 
 	self.controller = Controller(**params)
 
@@ -100,13 +102,13 @@ class DBWNode(object):
         while not rospy.is_shutdown():
           # TODO: Get predicted throttle, brake, and steering using `twist_controller`
           # You should only publish the control commands if dbw is enabled
-          throttle, brake, steering = self.controller.control(self.linear_velocity,
+          throttle, brake, steer = self.controller.control(self.linear_velocity,
                                                               self.angular_velocity,
                                                               self.current_linear_vel,
                                                               self.dbw_enabled)  
-	  throttle = 1.0
-	  brake = 0.0
-	  steer = 0.0
+ 	  # throttle = 1.0
+	  # brake = 0.0
+	  # steer = 0.0
 
 	  # If dbw node is enabled, publish commands. Otherwise, reset. 
 	  if self.dbw_enabled:
