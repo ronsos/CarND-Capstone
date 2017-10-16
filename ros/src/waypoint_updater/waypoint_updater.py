@@ -5,6 +5,7 @@ from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
 import math
+import tf
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -27,26 +28,75 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
+	self.base_waypoints = None
+	self.final_waypoints = None
+	self.current_pose = None 
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+	# TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        #rospy.Subscriber('/traffic_waypoint', Lane, self.traffic_cb)
+        #rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        while not rospy.is_shutdown():
+	  self.get_final_waypoints()
 
         rospy.spin()
 
+
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.current_pose = msg.pose
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+	self.base_waypoints = waypoints.waypoints
+
+    def get_final_waypoints(self):
+	# Check for initialization
+        # Get current position and yaw angle
+
+	if self.base_waypoints and self.current_pose:
+          #rospy.logwarn('base_waypoints and current_pose defined')
+
+	  # Initialize waypoint index and flag
+	  i_wp = 0	
+	  flag_wp = False
+
+	  # Go through waypoints until waypoint is past current state
+	  while flag_wp == False:
+
+            # Get base waypoint position 
+      	    x_wp = self.base_waypoints[i_wp].pose.pose.position.x
+	    y_wp = self.base_waypoints[i_wp].pose.pose.position.y 
+
+            # Get current position and yaw angle
+      	    x = self.current_pose.position.x
+	    y = self.current_pose.position.y
+	    quaternion = (self.current_pose.orientation.x,
+                       self.current_pose.orientation.y,
+                       self.current_pose.orientation.z,
+                       self.current_pose.orientation.w)
+	    euler = tf.transformations.euler_from_quaternion(quaternion) 
+            yaw = euler[2]
+
+            # Find x position difference between waypoint and current state
+            x_diff = (x_wp - x) * math.cos(yaw) + (y_wp - y) * math.sin(yaw)
+
+	    # If x_diff is less than zero, then waypoint is behind
+	    if x_diff < 0.0:
+	      i_wp += 1   # increment waypoint index
+	
+            # If x_diff is greater than or equal to zero, use this as current closest waypoint
+	    if x_diff >= 0.0:
+	      flag_wp = True
+	      rospy.logwarn('Current closest waypoint is (ind, x, y): %s, %f, %f ', i_wp, x_wp, y_wp)	
+  	      #Publish waypoint list
+	      # set_final_waypoints
+
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
