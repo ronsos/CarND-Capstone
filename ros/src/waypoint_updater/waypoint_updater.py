@@ -45,7 +45,7 @@ class WaypointUpdater(object):
         rospy.spin()
 
     # TODO DONE: refine this initial implementation
-    def callback_pose(self, msg):
+    def pose_cb(self, msg):
         self.x = msg.pose.position.x
         self.y = msg.pose.position.y
         o = msg.pose.orientation
