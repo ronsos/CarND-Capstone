@@ -77,7 +77,7 @@ void PurePursuit::calcLookaheadDistance(int waypoint)
                       : ld > maximum_lookahead_distance ? maximum_lookahead_distance
                       : ld ;
 
-  ROS_INFO("lookahead distance: %f",lookahead_distance_);
+  //ROS_INFO("lookahead distance: %f",lookahead_distance_);
 
   return ;
 }
@@ -97,7 +97,7 @@ double PurePursuit::calcCurvature(geometry_msgs::Point target) const
     else
       kappa = -KAPPA_MIN_;
   }
-  ROS_INFO_STREAM("kappa :" << kappa);
+  //ROS_INFO_STREAM("kappa :" << kappa);
   return kappa;
 }
 
@@ -297,7 +297,9 @@ void PurePursuit::getNextWaypoint()
     if (getPlaneDistance(current_waypoints_.getWaypointPosition(i), current_pose_.pose.position) > lookahead_distance_)
     {
       num_of_next_waypoint_ = i;
-      //ROS_ERROR_STREAM("wp = " << i << " dist = " << getPlaneDistance(current_waypoints_.getWaypointPosition(i), current_pose_.pose.position) );
+      //ROS_INFO_STREAM("wp = " << i << " dist = " << getPlaneDistance(current_waypoints_.getWaypointPosition(i), current_pose_.pose.position) );
+      //ROS_INFO("wp: %d, dist: %lf, x: %lf, y: %lf", i, getPlaneDistance(current_waypoints_.getWaypointPosition(i), current_pose_.pose.position), current_pose_.pose.position.x, current_pose_.pose.position.y );
+      // PROBLEM: returns a zero if the vehicle has traveled beyond the lookahead distance from the beginning of the waypoint list!!!
       return;
     }
   }
@@ -336,7 +338,7 @@ geometry_msgs::TwistStamped PurePursuit::outputTwist(geometry_msgs::Twist t) con
 
 
   double a = v * omega;
-  ROS_INFO("lateral accel = %lf", a);
+  //ROS_INFO("lateral accel = %lf", a);
 
   twist.twist.linear.x = fabs(a) > g_lateral_accel_limit ? max_v
                     : v;
