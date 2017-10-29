@@ -91,6 +91,7 @@ class WaypointUpdater(object):
             x_diff = (x_wp - x) * math.cos(yaw) + (y_wp - y) * math.sin(yaw)
 
 	    # If x_diff is less than zero, then waypoint is behind
+	    # TO DO: Improve method by solving for min distance! Ron
 	    if x_diff < 0.0:
 	      i_wp += 1   # increment waypoint index
 	
@@ -98,12 +99,18 @@ class WaypointUpdater(object):
 	    if x_diff >= 0.0:
 	      flag_wp = True
 	      rospy.logwarn('Current closest waypoint is (ind, x, y): %s, %f, %f ', i_wp, x_wp, y_wp)	
-  	      #Publish waypoint list
+  	      # Set the final waypoints
 	      self.set_final_waypoints(i_wp)
               
-	      self.set_final_waypoint_velocity(self.base_waypoints[i_wp])
+	      # Set the velocity for the waypoints
+	      for wp in self.final_waypoints:
+    	        self.set_final_waypoint_velocity(wp)
 	      
-	      self.final_waypoints_pub.waypoints = self.final_waypoints
+	      # Publish waypoint list
+	      final_waypoints_msg = Lane()      
+	      final_waypoints_msg.header.stamp = rospy.Time.now()
+	      final_waypoints_msg.waypoints = self.final_waypoints
+	      self.final_waypoints_pub.publish(final_waypoints_msg)
 
     def set_final_waypoints(self, i_wp):
 	# Set final_waypoints to include the current waypoint plus the next LOOKAHEAD waypoints
@@ -128,7 +135,8 @@ class WaypointUpdater(object):
 
     def set_waypoint_velocity2(self, waypoint, velocity):
         waypoint.twist.twist.linear.x = velocity
-        rospy.logwarn('Waypoint velocity set to: %f', velocity) 
+        #rospy.logwarn('Waypoint velocity set to: %f', velocity) 
+    
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
