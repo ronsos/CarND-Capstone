@@ -1,0 +1,5 @@
+
+
+virtualbox mount host shared dir
+------------------------------------
+sudo mount -t vboxsf Udacity-CarND-T3-P3-Capstone /home/student/Udacity-CarND-T3-P3-Capstone
