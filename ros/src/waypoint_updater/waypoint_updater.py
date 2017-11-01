@@ -23,16 +23,17 @@ as well as to verify your TL classifier.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-
+MAX_SPEED = 10.0
+MIN_SPEED = 1.0
 
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1),
-        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1),
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1),
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1),
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1),
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -71,11 +72,14 @@ class WaypointUpdater(object):
             rospy.logwarn('nearest_wp is < 0!')
             return
 
+        self.calc_go_wp_map(nearest_wp)
         if len(self.velocity_map) is 0:
             if self.velocity_map_empty is False:
                 self.velocity_map_empty = True
                 rospy.logwarn('Velocity map is empty!')
             return
+        # else:
+            # rospy.logwarn('Velocity map NOT empty!  Size: ' + str(len(self.velocity_map)))
 
         self.waypoint_idx = nearest_wp
 
@@ -104,6 +108,48 @@ class WaypointUpdater(object):
     def waypoints_cb(self, lane):
         rospy.logwarn('waypoints_cb(): waypoints size: ' + str(len(lane.waypoints)) )
         self.map_wp = lane.waypoints
+
+    def calc_stop_wp_map(self, tl_wp_idx):  # set the velocities when we see a red light ahead
+        if (tl_wp_idx < 0) or (tl_wp_idx <= self.waypoint_idx):
+            return False
+
+        n_wp = tl_wp_idx - self.waypoint_idx
+        vel = self.current_velocity
+        dv = 1.5 * vel ** (1.0 / n_wp)
+        self.velocity_map = []
+        for i in range(n_wp):
+            vel /= dv
+            if (vel < MIN_SPEED):
+                vel = 0.0
+            self.velocity_map.append(vel)
+
+        # Ensures the car is stopped at the end of the sequence.
+        self.velocity_map[-1] = 0.0
+
+        return True
+
+
+    def calc_go_wp_map(self, tl_wp_idx):  # set the velocity map with no slow-down needed
+        if (tl_wp_idx < 0) or (tl_wp_idx <= self.waypoint_idx):
+            # rospy.logwarn('calc_go_wp_map(): Waypoint SAME! Do nothing!')
+            return False
+
+        n_wp = tl_wp_idx - self.waypoint_idx
+        vel = self.current_velocity
+        dv = MIN_SPEED
+        self.velocity_map = []
+        rospy.logwarn('calc_go_wp_map(): dv = ' + str(dv))
+        for i in range(n_wp):
+            vel += dv
+            if vel > MAX_SPEED:
+                vel = MAX_SPEED
+            # rospy.logwarn('calc_go_wp_map(): index / vel: ' + str(i) + '/' + str(vel))
+            self.velocity_map.append(vel)
+
+        # Ensures the car is stopped at the end of the sequence.
+        # self.velocity_map[-1] = 0.0
+
+        return True
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
