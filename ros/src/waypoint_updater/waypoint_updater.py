@@ -22,7 +22,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 25 #50 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -43,7 +43,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
 	# Set rate
-	rate = rospy.Rate(5)  # 5
+	rate = rospy.Rate(2)  # 5
 
         # Check that sim is active and get waypoints if so
 	while not rospy.is_shutdown():
