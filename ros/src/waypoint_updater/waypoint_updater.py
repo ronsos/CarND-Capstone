@@ -43,7 +43,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
 	# Set rate
-	rate = rospy.Rate(1)  # 5
+	rate = rospy.Rate(5)  # 5
 
         # Check that sim is active and get waypoints if so
 	while not rospy.is_shutdown():
